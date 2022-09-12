@@ -7,3 +7,8 @@
 
 ## 온라인 코드 리뷰 과정
 * [텍스트와 이미지로 살펴보는 온라인 코드 리뷰 과정](https://github.com/next-step/nextstep-docs/tree/master/codereview)
+
+
+## 1단계 - DI 구현
+1. @Controller, @Service, @Repository 애노테이션이 설정된 인스턴스를 @Inject 애노테이션을 사용하여 의존관계를 주입한다.
+2. BeanFactoryTest의 di() 테스트를 성공시킨다.

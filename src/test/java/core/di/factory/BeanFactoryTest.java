@@ -30,6 +30,7 @@ public class BeanFactoryTest {
 
     @Test
     public void di() throws Exception {
+        // FIXME bean을 가져오는 과정에서 이미 객체는 주입이 완료되어있어야 한다.
         QnaController qnaController = beanFactory.getBean(QnaController.class);
 
         assertNotNull(qnaController);
