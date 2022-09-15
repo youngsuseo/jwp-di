@@ -20,6 +20,13 @@ public class BeanFactoryTest {
     private Reflections reflections;
     private BeanFactory beanFactory;
 
+    // preInstanticateBean을 생성할 수 있는 생성자를 찾는다. (@Inject 애노테이션이 설정되어있는 생성자) -> BeanFactoryUtils.getInjectedConstructor
+    // 생성자의 파라미터를 찾는다.
+    // 찾은 파라미터 안에 @Inject 애노테이션이 붙은 생성자가 있는지 찾는다.
+    // 없다면 해당 파라미터의 생성자 인스턴스를 생성하고,
+    // 있다면 그 하위에 파라미터도 같은 동작을 한다.
+    // 하위의 파라미터의 생성이 완료되었다면, 상위의 @Inject 애노테이션이 붙은 생성자에 파라미터를 전달해 인스턴스를 생성한다.
+
     @BeforeEach
     @SuppressWarnings("unchecked")
     public void setup() {

@@ -33,18 +33,19 @@ public class BeanFactory {
     }
 
     public void initialize() throws IllegalAccessException, InvocationTargetException, InstantiationException {
-        // FIXME 전달받은 class<?> 타입을 기준으로 bean을 생성해서 beans map 에 담는다.
-        //  그리고, bean을 생성하면서 주입을 완료한다 -> spring 실행되는 과정에서 이미 객체는 주입 되어있어야 하는 것 같다.¬
         for (Class<?> preInstanticateBean : preInstanticateBeans) {
             // preInstanticateBean을 생성할 수 있는 생성자를 찾는다. (@Inject 애노테이션이 설정되어있는 생성자) -> BeanFactoryUtils.getInjectedConstructor
-            // 생성자의 파라미터를 찾는다.
-            // 찾은 파라미터 안에 @Inject 애노테이션이 붙은 생성자가 있는지 찾는다.
-            // 없다면 해당 파라미터의 생성자 인스턴스를 생성하고,
-            // 있다면 그 하위에 파라미터도 같은 동작을 한다.
-            // 하위의 파라미터의 생성이 완료되었다면, 상위의 @Inject 애노테이션이 붙은 생성자에 파라미터를 전달해 인스턴스를 생성한다.
-
-            // preInstanticateBean을 생성할 수 있는 생성자를 찾는다. (@Inject 애노테이션이 설정되어있는 생성자) -> BeanFactoryUtils.getInjectedConstructor
             Constructor<?> injectedConstructor = BeanFactoryUtils.getInjectedConstructor(preInstanticateBean);
+
+            if (injectedConstructor == null) {
+                Class<?> concreteClass = BeanFactoryUtils.findConcreteClass(preInstanticateBean, preInstanticateBeans);
+                Constructor<?> constructor = concreteClass.getConstructors()[0];
+                Object o = constructor.newInstance();
+                beans.put(preInstanticateBean, o);
+                continue;
+            }
+
+
             // 생성자의 파라미터를 찾는다.
             Class<?>[] parameterTypes = injectedConstructor.getParameterTypes();
             // 찾은 파라미터 안에 @Inject 애노테이션이 붙은 생성자가 있는지 찾는다.
@@ -54,14 +55,24 @@ public class BeanFactory {
 
                 // 없다면 해당 파라미터의 생성자 인스턴스를 생성하고,
                 if (parameterConstructor == null) {
-                    Constructor<?> constructor = parameterType.getConstructors()[0];
+                    Class<?> concreteClass = BeanFactoryUtils.findConcreteClass(preInstanticateBean, preInstanticateBeans);
+                    Constructor<?> constructor = concreteClass.getConstructors()[0];
                     Object o = constructor.newInstance();
                     params.add(o);
                 } else {
-                    // 있다면 그 하위에 파라미터도 같은 동작을 한다.
-                    // 재귀호출
-                }
+                    // 있다면 그 하위에 파라미터도 같은 동작을 한다. (재귀호출)
+                    Class<?>[] childClasses = parameterConstructor.getParameterTypes();
+                    List<Object> childParams = new ArrayList<>();
+                    for (Class<?> childClass : childClasses) {
+                        Class<?> concreteChildClass = BeanFactoryUtils.findConcreteClass(childClass, preInstanticateBeans);
+                        Constructor<?> grandChildConstructor = concreteChildClass.getConstructors()[0];
+                        Object newInstance = grandChildConstructor.newInstance();
+                        childParams.add(newInstance);
+                    }
 
+                    Object o = parameterConstructor.newInstance(childParams.toArray());
+                    params.add(o);
+                }
             }
             // 하위의 파라미터의 생성이 완료되었다면, 상위의 @Inject 애노테이션이 붙은 생성자에 파라미터를 전달해 인스턴스를 생성한다.
             Object object = injectedConstructor.newInstance(params.toArray());
