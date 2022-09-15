@@ -10,6 +10,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,55 +32,42 @@ public class BeanFactory {
         return (T) beans.get(requiredType);
     }
 
-    public void initialize() {
+    public void initialize() throws IllegalAccessException, InvocationTargetException, InstantiationException {
         // FIXME 전달받은 class<?> 타입을 기준으로 bean을 생성해서 beans map 에 담는다.
         //  그리고, bean을 생성하면서 주입을 완료한다 -> spring 실행되는 과정에서 이미 객체는 주입 되어있어야 하는 것 같다.¬
-        System.out.println("logger = " + logger);
         for (Class<?> preInstanticateBean : preInstanticateBeans) {
-            // controller를 constructor로 생성한다.
+            // preInstanticateBean을 생성할 수 있는 생성자를 찾는다. (@Inject 애노테이션이 설정되어있는 생성자) -> BeanFactoryUtils.getInjectedConstructor
+            // 생성자의 파라미터를 찾는다.
+            // 찾은 파라미터 안에 @Inject 애노테이션이 붙은 생성자가 있는지 찾는다.
+            // 없다면 해당 파라미터의 생성자 인스턴스를 생성하고,
+            // 있다면 그 하위에 파라미터도 같은 동작을 한다.
+            // 하위의 파라미터의 생성이 완료되었다면, 상위의 @Inject 애노테이션이 붙은 생성자에 파라미터를 전달해 인스턴스를 생성한다.
 
-            // 생성자에서 필요한 파라미터를 확인하고 해당 파라미터도 생성하여 등록해둔다.
+            // preInstanticateBean을 생성할 수 있는 생성자를 찾는다. (@Inject 애노테이션이 설정되어있는 생성자) -> BeanFactoryUtils.getInjectedConstructor
             Constructor<?> injectedConstructor = BeanFactoryUtils.getInjectedConstructor(preInstanticateBean);
+            // 생성자의 파라미터를 찾는다.
+            Class<?>[] parameterTypes = injectedConstructor.getParameterTypes();
+            // 찾은 파라미터 안에 @Inject 애노테이션이 붙은 생성자가 있는지 찾는다.
+            List<Object> params = new ArrayList<>(); // 메서드 안으로 같이 이동
+            for (Class<?> parameterType : parameterTypes) {
+                Constructor<?> parameterConstructor = BeanFactoryUtils.getInjectedConstructor(parameterType);
 
-//            Parameter[] parameters = constructor.getParameters();
-//            // 파라미터 타입을 확인하고 생성한다.
-//            for (Parameter parameter : parameters) {
-//
-//            }
-            // 생성자에 필요한 파라미터 객체 생성
-            Parameter[] parameters = injectedConstructor.getParameters();
-            for (Parameter parameter : parameters) {
-                Class<?> type = parameter.getType();
-                Constructor<?> injectedConstructor1 = BeanFactoryUtils.getInjectedConstructor(type);
-                System.out.println("injectedConstructor1 = " + injectedConstructor1);
-
-                Parameter[] parameters1 = injectedConstructor1.getParameters();
-                for (Parameter parameter1 : parameters1) {
-                    Class<?> type1 = parameter1.getType();
-                    Constructor<?> injectedConstructor2 = BeanFactoryUtils.getInjectedConstructor(type1);
-                    System.out.println("injectedConstructor2 = " + injectedConstructor2);
-
-                    // 하위 객체의 주입받는 것이 없으면 인스턴스를 생성하고,
-                    // 생성한 인스턴스로 상위 인스턴스 생성
-                    // 같은 로직으로 맨 위 인스턴스 생성하고 beans map에 저장
+                // 없다면 해당 파라미터의 생성자 인스턴스를 생성하고,
+                if (parameterConstructor == null) {
+                    Constructor<?> constructor = parameterType.getConstructors()[0];
+                    Object o = constructor.newInstance();
+                    params.add(o);
+                } else {
+                    // 있다면 그 하위에 파라미터도 같은 동작을 한다.
+                    // 재귀호출
                 }
 
             }
-            Object o;
-            try {
-                o = injectedConstructor.newInstance();
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException(e);
-            }
+            // 하위의 파라미터의 생성이 완료되었다면, 상위의 @Inject 애노테이션이 붙은 생성자에 파라미터를 전달해 인스턴스를 생성한다.
+            Object object = injectedConstructor.newInstance(params.toArray());
 
-//
-//            Object object;
-//            try {
-//                object = constructor.newInstance();
-//            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-//                throw new RuntimeException(e);
-//            }
-//            beans.put(preInstanticateBean, object);
+            // 생성한 인스턴스를 map에 넣는다.
+            beans.put(preInstanticateBean, object);
         }
     }
 }
