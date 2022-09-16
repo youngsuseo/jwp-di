@@ -10,10 +10,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class BeanFactory {
@@ -39,8 +36,9 @@ public class BeanFactory {
 
             if (injectedConstructor == null) {
                 Class<?> concreteClass = BeanFactoryUtils.findConcreteClass(preInstanticateBean, preInstanticateBeans);
-                Constructor<?> constructor = concreteClass.getConstructors()[0];
-                Object o = constructor.newInstance();
+                Constructor<?>[] constructors = concreteClass.getConstructors();
+                Constructor<?> constructor = findConstructor(constructors);
+                Object o = instance(constructor);
                 beans.put(preInstanticateBean, o);
                 continue;
             }
@@ -55,9 +53,10 @@ public class BeanFactory {
 
                 // 없다면 해당 파라미터의 생성자 인스턴스를 생성하고,
                 if (parameterConstructor == null) {
-                    Class<?> concreteClass = BeanFactoryUtils.findConcreteClass(preInstanticateBean, preInstanticateBeans);
-                    Constructor<?> constructor = concreteClass.getConstructors()[0];
-                    Object o = constructor.newInstance();
+                    Class<?> concreteClass = BeanFactoryUtils.findConcreteClass(parameterType, preInstanticateBeans);
+                    Constructor<?>[] constructors = concreteClass.getConstructors();
+                    Constructor<?> constructor = findConstructor(constructors);
+                    Object o = instance(constructor);
                     params.add(o);
                 } else {
                     // 있다면 그 하위에 파라미터도 같은 동작을 한다. (재귀호출)
@@ -65,8 +64,10 @@ public class BeanFactory {
                     List<Object> childParams = new ArrayList<>();
                     for (Class<?> childClass : childClasses) {
                         Class<?> concreteChildClass = BeanFactoryUtils.findConcreteClass(childClass, preInstanticateBeans);
-                        Constructor<?> grandChildConstructor = concreteChildClass.getConstructors()[0];
-                        Object newInstance = grandChildConstructor.newInstance();
+
+                        Constructor<?>[] grandChildConstructors = concreteChildClass.getConstructors();
+                        Constructor<?> constructor = findConstructor(grandChildConstructors);
+                        Object newInstance = instance(constructor);
                         childParams.add(newInstance);
                     }
 
@@ -80,5 +81,26 @@ public class BeanFactory {
             // 생성한 인스턴스를 map에 넣는다.
             beans.put(preInstanticateBean, object);
         }
+    }
+
+    private Constructor<?> findConstructor(Constructor<?>[] constructors) {
+        for (Constructor<?> constructor : constructors) {
+            Class<?>[] parameters = constructor.getParameterTypes();
+            if (parameters.length < 1) {
+                return constructor;
+            }
+        }
+        return constructors[constructors.length - 1];
+    }
+
+    // FIXME 빈 생성자만 있는지? 없는 경우 만들어서 개발 필요
+    private Object instance(Constructor<?> constructor)
+            throws InstantiationException, IllegalAccessException, InvocationTargetException {
+        Parameter[] parameters = constructor.getParameters();
+        if (parameters.length < 1) {
+            return constructor.newInstance();
+        }
+
+        return constructor.newInstance(parameters);
     }
 }
