@@ -29,7 +29,7 @@ public class BeanFactory {
         return (T) beans.get(requiredType);
     }
 
-    public void initialize() {
+    public void initialize() { // config 내부에 있는 Bean들을 가져와 등록한다.
         for (Class<?> preInstanticateBean : preInstanticateBeans) {
             beans.put(preInstanticateBean, instanticate(preInstanticateBean));
         }

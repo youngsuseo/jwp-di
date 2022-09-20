@@ -7,7 +7,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public class ConnectionManager {
-    private static final String DB_DRIVER = "org.h2.Driver";
+    private static final String DB_DRIVER = "org.h2.Driver"; // DB 설정정보도 하드코딩으로 관리 -> 특정 데이터베이스에 종속
     private static final String DB_URL = "jdbc:h2:mem://localhost/~/jwp-di;MODE=MySQL;DB_CLOSE_DELAY=-1";
     private static final String DB_USERNAME = "sa";
     private static final String DB_PW = "";
