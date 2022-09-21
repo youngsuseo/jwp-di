@@ -16,9 +16,13 @@ import java.util.Set;
 public class BeanFactory {
     private static final Logger logger = LoggerFactory.getLogger(BeanFactory.class);
 
-    private final Set<Class<?>> preInstanticateBeans;
+    private Set<Class<?>> preInstanticateBeans;
 
-    private final Map<Class<?>, Object> beans = Maps.newHashMap();
+    private Map<Class<?>, Object> beans = Maps.newHashMap();
+
+    public BeanFactory() {
+
+    }
 
     public BeanFactory(Set<Class<?>> preInstanticateBeans) {
         this.preInstanticateBeans = preInstanticateBeans;
@@ -29,7 +33,7 @@ public class BeanFactory {
         return (T) beans.get(requiredType);
     }
 
-    public void initialize() {
+    public void initialize() { // config 내부에 있는 Bean들을 가져와 등록한다.
         for (Class<?> preInstanticateBean : preInstanticateBeans) {
             beans.put(preInstanticateBean, instanticate(preInstanticateBean));
         }
@@ -74,5 +78,9 @@ public class BeanFactory {
             }
         }
         return controllers;
+    }
+
+    public void setPreInstanticateBeans(Set<Class<?>> preInstanticateBeans) {
+        this.preInstanticateBeans = preInstanticateBeans;
     }
 }

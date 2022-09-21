@@ -3,6 +3,7 @@ package core.jdbc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +13,13 @@ public class JdbcTemplate {
 
     private static JdbcTemplate jdbcTemplate = new JdbcTemplate();
 
+    private DataSource dataSource;
+
     private JdbcTemplate() {
+    }
+
+    public JdbcTemplate(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     public static JdbcTemplate getInstance() {
@@ -20,8 +27,17 @@ public class JdbcTemplate {
     }
 
     public void update(String sql, PreparedStatementSetter pss) throws DataAccessException {
-        try (Connection conn = ConnectionManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        // connection pooling을 지원하기 위해 Connection대신 javax.sql.DataSource 인터페이스에 의존관계를 가지도록 지원
+        //        DataSource dataSource
+
+        try {
+            dataSource.getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        try (Connection conn = ConnectionManager.getConnection(); // ConnectionManager 가 DB 데이터 연결부분인데, static으로 매번 연결
+             PreparedStatement pstmt = conn.prepareStatement(sql)) { //
             pss.setParameters(pstmt);
             pstmt.executeUpdate();
         } catch (SQLException e) {
