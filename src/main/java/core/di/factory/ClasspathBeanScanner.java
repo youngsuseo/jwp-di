@@ -21,6 +21,11 @@ public class ClasspathBeanScanner {
         this.beanFactory = beanFactory;
     }
 
+    public ClasspathBeanScanner(BeanFactory beanFactory, Object... basePackage) {
+        this.beanFactory = beanFactory;
+        doScan(basePackage);
+    }
+
     public void doScan(Object... basePackage) {
         Set<Class<?>> beans = Sets.newHashSet();
         Reflections reflections = new Reflections(basePackage, new TypeAnnotationsScanner(), new SubTypesScanner(), new MethodAnnotationsScanner());
