@@ -1,5 +1,7 @@
 package core.mvc.tobe;
 
+import core.di.factory.ApplicationContext;
+import next.config.DataSourceConfiguration;
 import next.dao.UserDao;
 import next.model.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,24 +12,23 @@ import support.test.DBInitializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+
 public class AnnotationHandlerMappingTest {
     private AnnotationHandlerMapping handlerMapping;
-    private UserDao userDao;
 
     @BeforeEach
     public void setup() {
-        handlerMapping = new AnnotationHandlerMapping("core.mvc.tobe");
+        ApplicationContext applicationContext = new ApplicationContext(DataSourceConfiguration.class);
+        handlerMapping = new AnnotationHandlerMapping(applicationContext);
         handlerMapping.initialize();
 
         DBInitializer.initialize();
-        userDao = UserDao.getInstance();
     }
 
     @Test
     public void create_find() throws Exception {
         User user = new User("pobi", "password", "포비", "pobi@nextstep.camp");
         createUser(user);
-        assertThat(userDao.findByUserId(user.getUserId())).isEqualTo(user);
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/users");
         request.setParameter("userId", user.getUserId());

@@ -1,5 +1,6 @@
 package next.dao;
 
+import core.annotation.Inject;
 import core.jdbc.JdbcTemplate;
 import core.jdbc.RowMapper;
 import next.model.User;
@@ -9,17 +10,18 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class UserDao {
-    private static UserDao userDao;
-    private JdbcTemplate jdbcTemplate = JdbcTemplate.getInstance();
+    private JdbcTemplate jdbcTemplate;
 
     private UserDao() {
     }
 
+    @Inject
+    public UserDao(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
     public static UserDao getInstance() {
-        if (userDao == null) {
-            userDao = new UserDao();
-        }
-        return userDao;
+        return new UserDao();
     }
 
     public void insert(User user) {

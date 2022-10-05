@@ -21,6 +21,7 @@ public class ConfigurationBeanScanner {
     public ConfigurationBeanScanner(final BeanFactory beanFactory, final Object... basePackage) {
         initialize(beanFactory, basePackage);
         this.beanFactory = beanFactory;
+        beanFactory.initialize();
     }
 
     private void initialize(BeanFactory beanFactory, Object[] basePackage) {
