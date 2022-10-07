@@ -63,6 +63,7 @@ public class BeanFactory {
         }
 
         Constructor<?> injectedConstructor = BeanFactoryUtils.getInjectedConstructor(clazz);
+        logger.info(clazz.getName());
         if (injectedConstructor == null) {
             return BeanUtils.instantiateClass(BeanFactoryUtils.findConcreteClass(clazz, preInstanticateBeans));
         }
@@ -81,8 +82,8 @@ public class BeanFactory {
     }
 
     public Map<Class<?>, Object> getControllers() {
-        return preInstanticateBeans.stream().filter(clazz -> clazz.isAnnotationPresent(Controller.class))
-                .collect(Collectors.toMap(clazz -> clazz, beans::get));
+        return Collections.unmodifiableMap(preInstanticateBeans.stream().filter(clazz -> clazz
+                .isAnnotationPresent(Controller.class)).collect(Collectors.toMap(clazz -> clazz, beans::get)));
     }
 
     public void setPreInstanticateBeans(Set<Class<?>> preInstanticateBeans) {
